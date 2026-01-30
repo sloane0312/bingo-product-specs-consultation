@@ -230,9 +230,8 @@ grep -n "Kubernetes\|K8s" /root/knowledge/*控标参数*.md
 # Python 发送邮件（使用 163 邮箱 SMTP）
 import smtplib
 from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
+from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
-from email import encoders
 import os
 
 # SMTP 配置
@@ -240,6 +239,28 @@ SMTP_SERVER = "smtp.163.com"
 SMTP_PORT = 465
 SENDER_EMAIL = "LucyChan0312@163.com"
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD")  # 163邮箱授权码
+
+# 构造邮件与附件（确保 .xlsx 文件名与正确 MIME 类型）
+msg = MIMEMultipart()
+msg["From"] = SENDER_EMAIL
+msg["To"] = "chensilu@bingosoft.net"
+msg["Subject"] = "[控标参数比对] 发送结果"
+
+# 正文
+msg.attach(MIMEText("附件为控标参数比对结果。", "plain", "utf-8"))
+
+# 附件
+attachment_path = "result.xlsx"
+with open(attachment_path, "rb") as f:
+    filename = os.path.basename(attachment_path)
+    if not filename.lower().endswith(".xlsx"):
+        filename = f"{filename}.xlsx"
+    part = MIMEApplication(
+        f.read(),
+        _subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    part.add_header("Content-Disposition", f"attachment; filename=\"{filename}\"")
+    msg.attach(part)
 
 # 发送邮件
 with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT) as server:
