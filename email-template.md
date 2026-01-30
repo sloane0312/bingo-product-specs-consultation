@@ -160,9 +160,11 @@ subject_template: "[控标参数比对] {product_name} - {project_name} - {date}
 
 import smtplib
 import os
+import mimetypes
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
+from email.mime.base import MIMEBase
+from email import encoders
 
 # SMTP 配置
 SMTP_SERVER = "smtp.163.com"
@@ -185,14 +187,15 @@ def send_email(subject, body, attachment_path=None):
 
     # 添加附件
     if attachment_path and os.path.exists(attachment_path):
+        ctype, encoding = mimetypes.guess_type(attachment_path)
+        if ctype is None or encoding is not None:
+            ctype = 'application/octet-stream'
+        maintype, subtype = ctype.split('/', 1)
         with open(attachment_path, 'rb') as f:
+            part = MIMEBase(maintype, subtype)
+            part.set_payload(f.read())
+            encoders.encode_base64(part)
             filename = os.path.basename(attachment_path)
-            if not filename.lower().endswith(".xlsx"):
-                filename = f"{filename}.xlsx"
-            part = MIMEApplication(
-                f.read(),
-                _subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            )
             part.add_header('Content-Disposition', f'attachment; filename="{filename}"')
             msg.attach(part)
 

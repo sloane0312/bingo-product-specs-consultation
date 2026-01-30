@@ -230,8 +230,10 @@ grep -n "Kubernetes\|K8s" /root/knowledge/*控标参数*.md
 # Python 发送邮件（使用 163 邮箱 SMTP）
 import smtplib
 from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
+from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
+from email import encoders
+import mimetypes
 import os
 
 # SMTP 配置
@@ -249,16 +251,17 @@ msg["Subject"] = "[控标参数比对] 发送结果"
 # 正文
 msg.attach(MIMEText("附件为控标参数比对结果。", "plain", "utf-8"))
 
-# 附件
+# 附件（自动识别 MIME 类型并进行 Base64 编码）
 attachment_path = "result.xlsx"
+ctype, encoding = mimetypes.guess_type(attachment_path)
+if ctype is None or encoding is not None:
+    ctype = "application/octet-stream"
+maintype, subtype = ctype.split("/", 1)
 with open(attachment_path, "rb") as f:
+    part = MIMEBase(maintype, subtype)
+    part.set_payload(f.read())
+    encoders.encode_base64(part)
     filename = os.path.basename(attachment_path)
-    if not filename.lower().endswith(".xlsx"):
-        filename = f"{filename}.xlsx"
-    part = MIMEApplication(
-        f.read(),
-        _subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
     part.add_header("Content-Disposition", f"attachment; filename=\"{filename}\"")
     msg.attach(part)
 
