@@ -162,8 +162,7 @@ import smtplib
 import os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email import encoders
+from email.mime.application import MIMEApplication
 
 # SMTP 配置
 SMTP_SERVER = "smtp.163.com"
@@ -187,10 +186,13 @@ def send_email(subject, body, attachment_path=None):
     # 添加附件
     if attachment_path and os.path.exists(attachment_path):
         with open(attachment_path, 'rb') as f:
-            part = MIMEBase('application', 'octet-stream')
-            part.set_payload(f.read())
-            encoders.encode_base64(part)
             filename = os.path.basename(attachment_path)
+            if not filename.lower().endswith(".xlsx"):
+                filename = f"{filename}.xlsx"
+            part = MIMEApplication(
+                f.read(),
+                _subtype="vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            )
             part.add_header('Content-Disposition', f'attachment; filename="{filename}"')
             msg.attach(part)
 
